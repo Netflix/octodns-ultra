@@ -75,7 +75,7 @@ class UltraProvider(BaseProvider):
     SUPPORTS_ROOT_NS = True
     SUPPORTS_GEO = False
     SUPPORTS_DYNAMIC = False
-    TIMEOUT = 5
+    TIMEOUT = 30
     ZONE_REQUEST_LIMIT = 1000
     RRSET_REQUEST_LIMIT = 1000
 
