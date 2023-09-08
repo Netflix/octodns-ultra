@@ -130,6 +130,12 @@ class UltraProvider(BaseProvider):
 
         return payload
 
+    @staticmethod
+    def _change_keyer(change):
+        key = change.__class__.__name__
+        order = {'Delete': 0, 'Create': 1, 'Update': 2}
+        return order[key]
+
     def _get(self, path, **kwargs):
         return self._request('GET', path, **kwargs)
 
@@ -403,6 +409,7 @@ class UltraProvider(BaseProvider):
             self._zone_records[name] = {}
             changes = self._force_root_ns_update(changes)
 
+        changes.sort(key=self._change_keyer)
         for change in changes:
             class_name = change.__class__.__name__
             getattr(self, f'_apply_{class_name}')(change)
