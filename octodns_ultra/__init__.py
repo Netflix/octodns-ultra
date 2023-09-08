@@ -397,6 +397,7 @@ class UltraProvider(BaseProvider):
                 },
                 'primaryCreateInfo': {'createType': 'NEW'},
             }
+            self.log.debug('_apply:    json data=%s', data)
             self._post('/v2/zones', json=data)
             self.zones.append(name)
             self._zone_records[name] = {}
