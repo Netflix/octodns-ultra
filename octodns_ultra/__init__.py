@@ -549,10 +549,19 @@ class UltraProvider(BaseProvider):
         try:
             self._post('/v2/zones', json=data)
         except HTTPError as e:
-            data = e.response.json()
-            if e.response.status_code == 400 and len(data) == 1:
-                errorCode = data[0].get('errorCode', None)
-                if errorCode == ERROR_CODE_FORCE_IMPORT_REQUIRED:
-                    self.log.warn('_create_zone: got 1812 error back')
-
-            raise e
+            resp_body = e.response.json()
+            if (
+                e.response.status_code == 400
+                and len(resp_body) == 1
+                and resp_body[0].get('errorCode', None)
+                == ERROR_CODE_FORCE_IMPORT_REQUIRED
+            ):
+                # This means that during validation, Ultra found records that conflict with the name of the zone we're trying to complete.
+                # We need to set `forceImport` to override the validation and create the zone. This will move conflicting records into the newly created zone.
+                self.log.info(
+                    '_create_zone: got duplicate resource records error back. retrying with forceImport:true'
+                )
+                data['primaryCreateInfo']['forceImport'] = True
+                self._post('/v2/zones', json=data)
+            else:
+                raise e
