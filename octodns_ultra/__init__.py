@@ -550,8 +550,9 @@ class UltraProvider(BaseProvider):
             self._post('/v2/zones', json=data)
         except HTTPError as e:
             data = e.response.json()
-            errorCode = data.get('errorCode', None)
-            if errorCode == ERROR_CODE_FORCE_IMPORT_REQUIRED:
-                self.log.debug('_create_zone: got 1812 error back')
+            if e.status_code == 400 and len(data) == 1:
+                errorCode = data[0].get('errorCode', None)
+                if errorCode == ERROR_CODE_FORCE_IMPORT_REQUIRED:
+                    self.log.warn('_create_zone: got 1812 error back')
 
             raise e
