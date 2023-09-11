@@ -15,6 +15,10 @@ from octodns.record import Create, Record, Update
 __VERSION__ = '0.0.2'
 
 
+# Begin UltraDNS API error codes
+ERROR_CODE_FORCE_IMPORT_REQUIRED = 1812
+
+
 class UltraClientException(ProviderException):
     '''
     Base Ultra exception type
@@ -395,16 +399,7 @@ class UltraProvider(BaseProvider):
         name = desired.name
         if name not in self.zones:
             self.log.debug('_apply:   no matching zone, creating')
-            data = {
-                'properties': {
-                    'name': name,
-                    'accountName': self._account,
-                    'type': 'PRIMARY',
-                },
-                'primaryCreateInfo': {'createType': 'NEW'},
-            }
-            self.log.debug('_apply:    json data=%s', data)
-            self._post('/v2/zones', json=data)
+            self._create_zone(name)
             self.zones.append(name)
             self._zone_records[name] = {}
             changes = self._force_root_ns_update(changes)
@@ -541,3 +536,22 @@ class UltraProvider(BaseProvider):
                     + existing.fqdn
                 )
                 self._delete(path, json_response=False)
+
+    def _create_zone(self, name):
+        data = {
+            'properties': {
+                'name': name,
+                'accountName': self._account,
+                'type': 'PRIMARY',
+            },
+            'primaryCreateInfo': {'createType': 'NEW'},
+        }
+        try:
+            self._post('/v2/zones', json=data)
+        except HTTPError as e:
+            data = e.response.json()
+            errorCode = data.get('errorCode', None)
+            if errorCode == ERROR_CODE_FORCE_IMPORT_REQUIRED:
+                self.log.debug('_create_zone: got 1812 error back')
+
+            raise e
