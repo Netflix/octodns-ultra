@@ -5,7 +5,7 @@
 from collections import defaultdict
 from logging import getLogger
 
-from requests import Session
+from requests import HTTPError, Session
 
 from octodns import __VERSION__ as octodns_version
 from octodns.provider import ProviderException
@@ -116,7 +116,17 @@ class UltraProvider(BaseProvider):
                 raise UltraNoZonesExistException(resp)
         else:
             payload = resp.text
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except HTTPError as e:
+            self.log.error(
+                '_request: method=%s, path=%s, status=%s, body=%s',
+                method,
+                path,
+                resp.status_code,
+                payload,
+            )
+            raise e
         return payload
 
     def _get(self, path, **kwargs):
